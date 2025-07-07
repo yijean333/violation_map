@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>東海違規監控地圖</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    #map { height: 100vh; }
+    .popup-btn { display: inline-block; margin-top: 8px; padding: 4px 8px; background: #3880ff; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const API_URL = "http://127.0.0.1:5000"; // 部署後改成 https://your-app.onrender.com
+
+    // 初始化地圖
+    const map = L.map('map').setView([24.1792, 120.6009], 17);
+
+    // 加入 OSM 底圖
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+    // 假設幾個攝影機位置
+    const cameras = [
+      { name: 'yuenonglixin1', lat: 24.1800, lng: 120.6015 },
+      { name: 'bikegate',      lat: 24.1775, lng: 120.5990 }
+    ];
+
+    cameras.forEach(cam => {
+      const marker = L.marker([cam.lat, cam.lng]).addTo(map);
+
+      marker.on('click', async () => {
+        marker.bindPopup(`<b>${cam.name}</b><br>載入中...`).openPopup();
+        try {
+          const res  = await fetch(`${API_URL}/violations/${cam.name}`);
+          const data = await res.json();
+
+          if (!Array.isArray(data) || data.length === 0) {
+            marker.setPopupContent(
+              `<b>${cam.name}</b><br>無違規紀錄`
+            ).openPopup();
+          } else {
+            const latest = data[data.length - 1];
+            marker.setPopupContent(
+              `<b>${cam.name}</b><br>` +
+              `最後違規時間：${latest.time}<br>` +
+              `車種：${latest.vehicle}<br>` +
+              `<button class="popup-btn" onclick="window.open('${API_URL}/violations/${cam.name}','_blank')">查看全部紀錄</button>`
+            ).openPopup();
+          }
+        } catch (e) {
+          marker.setPopupContent(
+            `<b>${cam.name}</b><br>❌ 取得資料失敗`
+          ).openPopup();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

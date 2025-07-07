@@ -1,0 +1,8 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+env/
+# OpenCV 螢幕截圖或模型
+screenshots/
+model/
