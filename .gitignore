@@ -1,8 +1,21 @@
 # Python
 __pycache__/
 *.pyc
+
+# Virtual environment
 venv/
 env/
-# OpenCV 螢幕截圖或模型
+
+# 模型與推論圖片資料夾（視你實際情況）
+runs/
 screenshots/
 model/
+weights/
+*.pt
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# 系統相關
+.DS_Store
+Thumbs.db

@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import json
 import os
@@ -7,6 +7,13 @@ app = Flask(__name__)
 CORS(app)  # 允許所有來源跨域請求
 
 VIOLATION_LOG = "violations.json"
+
+# === 根路由: 回傳 map.html ===
+@app.route('/')
+def index():
+    # 使用絕對路徑確保找到 map.html
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    return send_file(os.path.join(dir_path, 'map.html'))
 
 # === 路由: 查詢某攝影機違規紀錄 ===
 @app.route('/violations/<camera_name>', methods=['GET'])
@@ -40,10 +47,7 @@ def upload_violation():
         else:
             data = {}
 
-        if camera_name not in data:
-            data[camera_name] = []
-
-        data[camera_name].append(violation)
+        data.setdefault(camera_name, []).append(violation)
 
         with open(VIOLATION_LOG, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
@@ -52,7 +56,3 @@ def upload_violation():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# === 主程式啟動 ===
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
