@@ -13,7 +13,7 @@
   <div id="map"></div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const API_URL = "http://127.0.0.1:5000"; // 部署後改成 https://your-app.onrender.com
+    const API_URL = "https://oloobijiang.onrender.com"; // Render 上的 API
 
     // 初始化地圖
     const map = L.map('map').setView([24.1792, 120.6009], 17);
@@ -21,7 +21,7 @@
     // 加入 OSM 底圖
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
-    // 假設幾個攝影機位置
+    // 攝影機名稱和經緯度
     const cameras = [
       { name: 'yuenonglixin1', lat: 24.1800, lng: 120.6015 },
       { name: 'bikegate',      lat: 24.1775, lng: 120.5990 }
