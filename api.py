@@ -56,8 +56,9 @@ def upload_violation():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
+'''
 if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))  # 改成讀環境變數 PORT，沒設定就用 5000
     app.run(host='0.0.0.0', port=port, debug=True)
+'''
