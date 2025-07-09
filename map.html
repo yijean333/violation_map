@@ -21,6 +21,12 @@
       color: #fff; border: none; border-radius: 4px;
       cursor: pointer;
     }
+    .close-btn {
+      display: inline-block; margin-bottom: 10px;
+      padding: 4px 8px; background: #aaa;
+      color: #fff; border: none; border-radius: 4px;
+      cursor: pointer; float: right;
+    }
   </style>
 </head>
 <body>
@@ -29,18 +35,16 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // 使用相對路徑，符合同域部署
     const API_BASE = '';
-
     const map = L.map('map').setView([24.1792, 120.6009], 17);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+    const recordPanel = document.getElementById('record-panel');
 
     const cameras = [
       { name: 'yuenonglixin1', lat: 24.1800, lng: 120.6015 },
       { name: 'bikegate',      lat: 24.1775, lng: 120.5990 }
     ];
-
-    const recordPanel = document.getElementById('record-panel');
 
     cameras.forEach(cam => {
       const marker = L.marker([cam.lat, cam.lng]).addTo(map);
@@ -55,10 +59,11 @@
             marker.setPopupContent(`<b>${cam.name}</b><br>無違規紀錄`).openPopup();
           } else {
             const latest = data[data.length - 1];
+            const vehicle = Array.isArray(latest.vehicle) ? latest.vehicle.join(', ') : latest.vehicle;
             marker.setPopupContent(
               `<b>${cam.name}</b><br>` +
               `最後違規時間：${latest.time}<br>` +
-              `車種：${latest.vehicle}<br>` +
+              `車種：${vehicle}<br>` +
               `<button class="popup-btn" onclick="showFullRecords('${cam.name}')">查看完整記錄</button>`
             ).openPopup();
           }
@@ -69,34 +74,45 @@
       });
     });
 
+    map.on('click', () => {
+      recordPanel.style.display = 'none';
+    });
+
     async function showFullRecords(camName) {
       recordPanel.style.display = 'block';
-      recordPanel.innerHTML = `<h3>${camName} 違規紀錄</h3><p>載入中...</p>`;
+      recordPanel.scrollTop = 0;
+      recordPanel.innerHTML = `
+        <button class="close-btn" onclick="recordPanel.style.display='none'">關閉</button>
+        <h3>${camName} 違規紀錄</h3>
+        <p>載入中...</p>
+      `;
+
       try {
         const res = await fetch(`${API_BASE}/violations/${camName}`);
         if (!res.ok) {
-          recordPanel.innerHTML = `<h3>${camName} 違規紀錄</h3><p>無法取得 (${res.status})</p>`;
+          recordPanel.innerHTML += `<p>無法取得 (${res.status})</p>`;
           return;
         }
         const data = await res.json();
-        recordPanel.innerHTML = `<h3>${camName} 違規紀錄</h3>`;
         if (!Array.isArray(data) || data.length === 0) {
           recordPanel.innerHTML += '<p>無違規紀錄</p>';
           return;
         }
+
         data.reverse().forEach(item => {
           const div = document.createElement('div');
           div.className = 'record';
+          const vehicleText = Array.isArray(item.vehicle) ? item.vehicle.join(', ') : item.vehicle;
           div.innerHTML = `
             <b>時間：</b>${item.time}<br>
-            <b>車種：</b>${item.vehicle}<br>
+            <b>車種：</b>${vehicleText}<br>
             ${item.image_url ? `<img src="${item.image_url}" />` : ''}
           `;
           recordPanel.appendChild(div);
         });
       } catch (err) {
         console.error(err);
-        recordPanel.innerHTML = `<h3>${camName} 違規紀錄</h3><p>❌ 載入失敗</p>`;
+        recordPanel.innerHTML += `<p>❌ 載入失敗</p>`;
       }
     }
   </script>
