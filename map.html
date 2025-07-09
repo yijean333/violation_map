@@ -35,7 +35,9 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const API_BASE = '';
+    // 一律指向你的 Flask 伺服器
+    const API_BASE = 'http://127.0.0.1:5000';
+
     const map = L.map('map').setView([24.1792, 120.6009], 17);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
@@ -48,7 +50,7 @@
 
     cameras.forEach(cam => {
       const marker = L.marker([cam.lat, cam.lng]).addTo(map);
-      marker.on('click', async () => {
+      marker.on('click', async (e) => {
         marker.bindPopup(`<b>${cam.name}</b><br>載入中...`).openPopup();
         try {
           const res = await fetch(`${API_BASE}/violations/${cam.name}`);
@@ -59,12 +61,18 @@
             marker.setPopupContent(`<b>${cam.name}</b><br>無違規紀錄`).openPopup();
           } else {
             const latest = data[data.length - 1];
-            const vehicle = Array.isArray(latest.vehicle) ? latest.vehicle.join(', ') : latest.vehicle;
+            const vehicle = Array.isArray(latest.vehicle)
+              ? latest.vehicle.join(', ')
+              : latest.vehicle;
+
+            // 按鈕阻止點擊冒泡，避免觸發 map.on('click')
+            const btnHtml = `<button class="popup-btn" onclick="event.stopPropagation(); showFullRecords('${cam.name}')">查看完整記錄</button>`;
+
             marker.setPopupContent(
               `<b>${cam.name}</b><br>` +
               `最後違規時間：${latest.time}<br>` +
               `車種：${vehicle}<br>` +
-              `<button class="popup-btn" onclick="showFullRecords('${cam.name}')">查看完整記錄</button>`
+              btnHtml
             ).openPopup();
           }
         } catch (e) {
@@ -74,6 +82,7 @@
       });
     });
 
+    // 點地圖其他地方時關掉側欄
     map.on('click', () => {
       recordPanel.style.display = 'none';
     });
@@ -102,7 +111,9 @@
         data.reverse().forEach(item => {
           const div = document.createElement('div');
           div.className = 'record';
-          const vehicleText = Array.isArray(item.vehicle) ? item.vehicle.join(', ') : item.vehicle;
+          const vehicleText = Array.isArray(item.vehicle)
+            ? item.vehicle.join(', ')
+            : item.vehicle;
           div.innerHTML = `
             <b>時間：</b>${item.time}<br>
             <b>車種：</b>${vehicleText}<br>
