@@ -3,19 +3,22 @@
 <head>
   <meta charset="utf-8" />
   <title>東海違規監控地圖</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+06j0bN1/TjV3BmRUoS8Wf7qoBiJCKFzT9fP8p+ac=" crossorigin="" />
   <style>
+    body, html { margin: 0; padding: 0; }
     #map { height: 100vh; }
     .popup-img {
-      width: 200px;
+      max-width: 200px;
+      height: auto;
       margin-top: 8px;
+      display: block;
     }
   </style>
 </head>
 <body>
   <div id="map"></div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j7oXYyfSMZF2VuSFTA9FOuBOkN1ln4q0J3v+5R0=" crossorigin=""></script>
   <script>
     // === 初始化地圖 ===
     const map = L.map('map').setView([24.1792, 120.6009], 17); // 東海大學中心點
@@ -23,34 +26,49 @@
     // === 加入 OSM 底圖 ===
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
     // === 假設幾個攝影機位置 ===
     const cameras = [
       { name: 'yuenonglixin1', lat: 24.1800, lng: 120.6015 },
-      { name: 'bikegate', lat: 24.1775, lng: 120.5990 }
+      { name: 'bikegate',        lat: 24.1775, lng: 120.5990 }
     ];
 
     // === 加入標記 ===
     cameras.forEach(cam => {
-      const marker = L.marker([cam.lat, cam.lng]).addTo(map)
-        .bindPopup(<b>${cam.name}</b><br>載入中...)
-        .on('click', async () => {
-          const res = await fetch(http://127.0.0.1:5000/violations/${cam.name});
+      const marker = L.marker([cam.lat, cam.lng])
+        .addTo(map)
+        .bindPopup(`
+          <b>${cam.name}</b><br>
+          載入中...
+        `);
+
+      marker.on('click', async () => {
+        try {
+          const res = await fetch(`/violations/${cam.name}`);
+          if (!res.ok) throw new Error('網路錯誤');
           const data = await res.json();
 
-          if (data.length === 0) {
-            marker.setPopupContent(<b>${cam.name}</b><br>沒有違規紀錄);
+          if (!Array.isArray(data) || data.length === 0) {
+            marker.setPopupContent(
+              `<b>${cam.name}</b><br>沒有違規紀錄`
+            );
           } else {
             const latest = data[data.length - 1];
-            marker.setPopupContent(
+            marker.setPopupContent(`
               <b>${cam.name}</b><br>
               最後違規時間：${latest.timestamp}<br>
               車種：${latest.labels.join(', ')}<br>
               <img src="${latest.image_url}" class="popup-img" />
-            );
+            `);
           }
-        });
+        } catch (err) {
+          marker.setPopupContent(
+            `<b>${cam.name}</b><br>讀取資料失敗`);
+          console.error(err);
+        }
+      });
     });
   </script>
 </body>
